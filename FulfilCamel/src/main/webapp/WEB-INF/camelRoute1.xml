@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd 
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+    ">
+    <!--<bean id="myReviveProcess" class="com.smart.fulfilcamel.reviveProcess"/>-->
+    <bean id="coolReviveProcess" class="com.smart.fulfilcamel.reviveProcess"/>
+    <bean id="tcpEncoderId" class="com.smart.fulfilcamel.tcpEncoder"/>
+    <bean id="receiveProcessBean" class="com.smart.fulfilcamel.receiveProcess"/>
+    <bean id="hxClientChannel" class="com.smart.fulfilcamel.HxClientChannelPipelineFactory"/>
+    <bean id="hxServerInitialFactory" class="com.smart.fulfilcamel.hxServerInitialFactory"/>
+    <bean id="exceptionProcess" class="com.smart.fulfilcamel.ExceptionHandle"/>
+    <bean id="finallyProcess" class="com.smart.fulfilcamel.finallyHandle"/>
+    <bean id="mediation" class="com.smart.fulfilcamel.mediationHandle"/>
+    <bean id="oneProcess" class="com.smart.fulfilcamel.oneProcess"/>
+    
+    <util:list id="decoders" list-class="java.util.LinkedList">
+        <bean class="org.apache.camel.component.netty4.ChannelHandlerFactories" factory-method="newLengthFieldBasedFrameDecoder">
+            <constructor-arg value="1048576"/>
+            <constructor-arg value="0"/>
+            <constructor-arg value="4"/>
+            <constructor-arg value="0"/>
+            <constructor-arg value="4"/>
+        </bean>
+        <bean class="io.netty.handler.codec.string.StringDecoder"/>
+    </util:list>
+ 
+    <util:list id="encoders" list-class="java.util.LinkedList">
+        <bean class="io.netty.handler.codec.LengthFieldPrepender">
+            <constructor-arg value="4"/>
+        </bean>
+        <bean class="io.netty.handler.codec.string.StringEncoder"/>
+    </util:list>
+ 
+    <bean id="length-encoder" class="io.netty.handler.codec.LengthFieldPrepender">
+        <constructor-arg value="4"/>
+    </bean>
+    <bean id="string-encoder" class="io.netty.handler.codec.string.StringEncoder"/>
+ 
+    <bean id="length-decoder" class="org.apache.camel.component.netty4.ChannelHandlerFactories" factory-method="newLengthFieldBasedFrameDecoder">
+        <constructor-arg value="1048576"/>
+        <constructor-arg value="0"/>
+        <constructor-arg value="4"/>
+        <constructor-arg value="0"/>
+        <constructor-arg value="4"/>
+    </bean>
+    <bean id="string-decoder" class="io.netty.handler.codec.string.StringDecoder"/>
+    
+    <!-- this is an included XML file where we only the the routeContext -->
+    <routeContext id="myCoolRoutes" xmlns="http://camel.apache.org/schema/spring">
+        <!-- we can have a route -->
+        <route id="cool">
+            <from uri="jetty:http://localhost:8777/FulfilCamel/cool?sessionSupport=true"/>
+            <to uri="direct:bar"/>
+        </route>
+        <!-- and another route, you can have as many your like -->
+        <route id="bar">
+            <from uri="direct:bar"/>
+            <removeHeaders pattern="CamelHttp*"/>
+            <process ref="coolReviveProcess"/>
+            <to uri="http://localhost:8007/FulfilCamel/fulfil"/>
+        </route>
+        
+        <route id="tcpClientTest">
+            <from uri="netty4-http:http://0.0.0.0:8778/FulfilCamel/tcp"/>
+            <removeHeaders pattern="CamelHttp*"/>
+            <process ref="tcpEncoderId"/>
+            <to uri="netty4:tcp://192.168.169.188:7777"/>
+        </route>
+        <route id="tcpClientTest2">
+            <from uri="netty4-http:http://0.0.0.0:8778/FulfilCamel/tcpTest"/>
+            <removeHeaders pattern="CamelHttp*"/>
+            <process ref="tcpEncoderId"/>
+            <to uri="netty4:tcp://192.168.169.188:7777?textline=true&amp;encoders=encoders&amp;decoders=length-decoder,string-decoder&amp;sendBufferSize=65536&amp;receiveBufferSize=65536"/>
+            <process ref="receiveProcessBean"/>
+        </route>
+        <route id="tcpClientTest3">
+            <from uri="netty4-http:http://0.0.0.0:8778/FulfilCamel/tcphx"/>
+            <removeHeaders pattern="CamelHttp*"/>
+            <doTry>
+                <process ref="mediation"/>
+                <choice>
+                    <when>
+                        <xpath>$order= '1' </xpath>
+                        <process ref="oneProcess"/>
+                    </when>
+                    <when>
+                        <xpath>//name = 'Kong'</xpath>
+                        <process ref="oneProcess"/>
+                    </when>
+                    <otherwise>
+                        <process ref="tcpEncoderId"/>
+                    </otherwise>  
+                </choice>
+                <to uri="netty4:tcp://192.168.169.188:7777?serverInitializerFactory=#hxServerInitialFactory&amp;clientInitializerFactory=#hxClientChannel&amp;textline=true&amp;synchronous=true&amp;sendBufferSize=65536&amp;receiveBufferSize=65536"/>
+                <process ref="receiveProcessBean"/>
+              
+                <doCatch>
+                    <exception>java.io.IOException</exception>
+                    <exception>java.lang.IllegalStateException</exception>
+                    <process ref="exceptionProcess"/>
+                </doCatch>
+                <doFinally>
+                    <process ref="finallyProcess"/>
+                </doFinally>
+            </doTry>
+        </route>
+        
+    </routeContext>
+ 
+</beans>

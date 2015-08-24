@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://camel.apache.org/schema/spring 
+       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    
+    <bean id="myReviveProcess" class="com.smart.fulfilcamel.reviveProcess"/>
+    
+    <!-- import the routes from another XML file -->
+    <import resource="camelRoute1.xml"/>
+ 
+    <camelContext id="testOne" xmlns="http://camel.apache.org/schema/spring">
+        
+        <!-- refer to a given route to be used -->
+        <routeContextRef ref="myCoolRoutes"/>
+        
+        <route>
+            <from uri="jetty:http://localhost:8777/FulfilCamel/revive?sessionSupport=true"/>
+            <removeHeaders pattern="CamelHttp*" />
+            <process ref="myReviveProcess"/>
+            <to uri="http://localhost:8007/FulfilCamel/fulfil"/>
+        </route>
+        
+    </camelContext>
+</beans>
+
+
