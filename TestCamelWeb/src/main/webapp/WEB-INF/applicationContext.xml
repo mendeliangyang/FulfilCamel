@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://camel.apache.org/schema/spring 
+       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean class="org.mt.testcamelweb.utile.MyApplicationContextUtil" />
+    <bean id="myTransform" class="org.mt.testcamelweb.utile.MyTransform"/>
+    <camelContext  id="myCoolRoutes"  xmlns="http://camel.apache.org/schema/spring" >
+        <!-- we can have a route -->
+        <route id="cool">
+            <from uri="direct:bus1"/>
+            <bean ref="myTransform"/>
+            <to uri="http://192.168.169.217:21080/SZABCBank/Utile/login"/>
+            <bean ref="myTransform"/>
+            <choice>
+                <when>
+                    <xpath>$retCode = '0000'</xpath>
+                    <to uri="direct:b"/>
+                </when>
+                <when>
+                    <xpath>$retCode = 'cheese'</xpath>
+                    <to uri="direct:c"/>
+                </when>
+                <otherwise>
+                    <to uri="direct:d"/>
+                </otherwise>
+            </choice>
+        </route>
+        
+    </camelContext >
+</beans>

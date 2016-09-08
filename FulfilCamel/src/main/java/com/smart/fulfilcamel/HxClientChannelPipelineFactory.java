@@ -23,7 +23,10 @@ import org.apache.camel.component.netty4.handlers.ClientChannelHandler;
 public class HxClientChannelPipelineFactory extends ClientInitializerFactory {
 
     private final int maxLineSize = 1024;
-public HxClientChannelPipelineFactory(){}
+
+    public HxClientChannelPipelineFactory() {
+    }
+
     public HxClientChannelPipelineFactory(NettyProducer np) {
         this.producer = np;
     }
@@ -37,7 +40,7 @@ public HxClientChannelPipelineFactory(){}
 
     @Override
     protected void initChannel(Channel ch) throws Exception {
-        
+
         ChannelPipeline channelPipeline = ch.pipeline();
         channelPipeline.addLast("encoder-SD", new StringEncoder(CharsetUtil.US_ASCII));
         channelPipeline.addLast("decoder-DELIM", new DelimiterBasedFrameDecoder(maxLineSize, true, Delimiters.lineDelimiter()));
