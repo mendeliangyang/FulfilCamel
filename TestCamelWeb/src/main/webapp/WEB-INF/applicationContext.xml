@@ -2,36 +2,65 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans 
        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
        http://www.springframework.org/schema/context 
        http://www.springframework.org/schema/context/spring-context-2.5.xsd
        http://camel.apache.org/schema/spring 
-       http://camel.apache.org/schema/spring/camel-spring.xsd">
+       http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+">
     <bean class="org.mt.testcamelweb.utile.MyApplicationContextUtil" />
     <bean id="myTransform" class="org.mt.testcamelweb.utile.MyTransform"/>
+    <bean id="myProcess" class="org.mt.testcamelweb.utile.MyProcess"/>
+    <bean id="myCloseProcess" class="org.mt.testcamelweb.utile.MyCloseProcess"/>
+    <bean id="myServerInitialFactory" class="org.mt.testcamelweb.utile.MyServerInitialFactory"/>
+    <bean id="myClientChannel" class="org.mt.testcamelweb.utile.MyClientChannelPipelineFactory"/>
+    <util:list id="encoders" list-class="java.util.LinkedList">
+        <bean class="io.netty.handler.codec.LengthFieldPrepender">
+            <constructor-arg value="4"/>
+        </bean>
+        <bean class="io.netty.handler.codec.string.StringEncoder"/>
+    </util:list>
+    <bean id="length-encoder" class="io.netty.handler.codec.LengthFieldPrepender">
+        <constructor-arg value="4"/>
+    </bean>
+    <bean id="string-encoder" class="io.netty.handler.codec.string.StringEncoder"/>
     <camelContext  id="myCoolRoutes"  xmlns="http://camel.apache.org/schema/spring" >
-        <!-- we can have a route -->
+        
+        <!---->
+        <route id="bus1RetCode0000">
+            <from uri="direct:bus1RetCode0000"/>
+            <!--<to uri="netty4:tcp://192.168.160.227:7788?textline=true&amp;encoders=encoders&amp;decoders=length-decoder,string-decoder&amp;sendBufferSize=65536&amp;receiveBufferSize=65536"/>-->
+            <to uri="netty4:tcp://192.168.160.181:7788?serverInitializerFactory=#myServerInitialFactory&amp;clientInitializerFactory=#myClientChannel&amp;textline=true&amp;sendBufferSize=65536&amp;receiveBufferSize=65536"/>
+            
+            <process ref="myCloseProcess"/>
+        </route>
+        <!-- 接入 -->
         <route id="cool">
             <from uri="direct:bus1"/>
             <bean ref="myTransform"/>
             <to uri="http://192.168.169.217:21080/SZABCBank/Utile/login"/>
-            <bean ref="myTransform"/>
+            <process ref="myProcess"/>
             <choice>
                 <when>
                     <xpath>$retCode = '0000'</xpath>
-                    <to uri="direct:b"/>
+                    <to uri="direct:bus1RetCode0000"/>
                 </when>
                 <when>
-                    <xpath>$retCode = 'cheese'</xpath>
-                    <to uri="direct:c"/>
+                    <xpath>$retCode = 'ErrorUserOrPwd'</xpath>
+                    <to uri="direct:bus1RetCode0000"/>
                 </when>
                 <otherwise>
-                    <to uri="direct:d"/>
+                    <to uri="direct:bus1RetCode0000"/>
                 </otherwise>
             </choice>
         </route>
+        
+        
         
     </camelContext >
 </beans>

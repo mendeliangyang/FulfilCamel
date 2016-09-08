@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/Test")
 public class TestController {
 
-    @RequestMapping(value = "/t1", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = "/t1", method = RequestMethod.POST)//, produces = "application/json;charset=UTF-8"
     @ResponseBody
     public String getRegisterVerifyCode(@RequestBody String param) throws Exception {
         StringBuffer sb = new StringBuffer(param);
@@ -37,6 +37,6 @@ public class TestController {
         ProducerTemplate producerTemplate = context.createProducerTemplate();
         Object object = producerTemplate.requestBody("direct:bus1", param, String.class);
         System.out.println(object.toString());
-        return sb.toString();
+        return object.toString();
     }
 }

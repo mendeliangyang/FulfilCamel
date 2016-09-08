@@ -1,0 +1,5 @@
+E:\hx\java\FulfilCamel\MockTcpServiceCamel\MockTcpServiceCamel\bin\Debug\MockTcpServiceCamel.exe.config
+E:\hx\java\FulfilCamel\MockTcpServiceCamel\MockTcpServiceCamel\bin\Debug\MockTcpServiceCamel.exe
+E:\hx\java\FulfilCamel\MockTcpServiceCamel\MockTcpServiceCamel\bin\Debug\MockTcpServiceCamel.pdb
+E:\hx\java\FulfilCamel\MockTcpServiceCamel\MockTcpServiceCamel\obj\Debug\MockTcpServiceCamel.exe
+E:\hx\java\FulfilCamel\MockTcpServiceCamel\MockTcpServiceCamel\obj\Debug\MockTcpServiceCamel.pdb
